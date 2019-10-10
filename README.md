@@ -1,1 +1,1 @@
-The purpose of this repository is to learn about computational finance. Hi Sam!
+The purpose of this repository is to learn about computational finance.
