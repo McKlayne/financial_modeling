@@ -59,7 +59,6 @@ def naive_monte_carlo_pricer(option, spot, rate, vol, div, reps, steps):
     nudt = (rate - div - 0.5 * vol * vol) * dt
     sigdt = vol * np.sqrt(dt)
     z = np.random.normal(size=reps)
-    Z = np.concatenate((z,-z))
     paths = spot * np.exp(nudt + sigdt  * z)
     payoffs = option.payoff(paths) 
     price = np.mean(payoffs) * np.exp(-rate * expiry)
@@ -74,12 +73,30 @@ def antithetic_monte_carlo_pricer(option, spot, rate, vol, div, reps, steps):
     dt = expiry / steps
     nudt = (rate - div - 0.5 * vol * vol) * dt
     sigdt = vol * np.sqrt(dt)
-    z = np.random.normal(size=reps)
-    Z = np.concatenate((z,-z))
-    paths = spot * np.exp(nudt + sigdt  * Z)
-    payoffs = option.payoff(paths)
-    price = np.mean(payoffs) * np.exp(-rate * expiry)
-    stderr = np.std(payoffs, ddof=1) / np.sqrt(reps-1)
+    lnS = np.log(spot)
+    
+    sum_CT = 0
+    sum_CT2 = 0
+    
+    for j in range(reps):
+        lnS_1 = lnS
+        lnS_2 = lnS
+        z = np.random.normal(size=reps)
+
+        for i in range(int(steps)):
+            lnS_1 = lnS_1 + nudt + sigdt * (z[i])
+            lnS_2 = lnS_2 + nudt + sigdt * (-z[i])
+            
+            
+        Spot_1 = np.exp(lnS_1)
+        Spot_2 = np.exp(lnS_2)
+        CT = 0.5 * (option.payoff(Spot_1) + option.payoff(Spot_2))
+        sum_CT = sum_CT + CT
+        sum_CT2 = sum_CT2 + CT*CT
+    
+    price = sum_CT/reps*np.exp(-rate * expiry)
+    SD = np.sqrt((sum_CT2 - sum_CT*sum_CT/reps)*np.exp(-2*rate*expiry)/(reps - 1))
+    stderr = SD/np.sqrt(reps)
         
     return PricerResult(price, stderr)
 
@@ -111,12 +128,13 @@ def black_scholes_delta_anti_control_pricer(option, spot, rate, vol, div, reps, 
         spot_2 = spot
         convar_1 = 0.0
         convar_2 = 0.0
+        
+        z = np.random.normal(size=reps)
 
         for i in range(int(steps)):
             t = i * dt
             delta_1 = black_scholes_delta(spot_1, t, strike, expiry, vol, rate, div)
             delta_2 = black_scholes_delta(spot_2, t, strike, expiry, vol, rate, div)
-            z = np.random.normal(size=reps)
             spot_tn_1 = spot_1 * np.exp(nudt + sigsdt * z[i])
             spot_tn_2 = spot_2 * np.exp(nudt + sigsdt * -z[i])
             convar_1 = convar_1 + delta_1 * (spot_tn_1 - spot_1 * erddt)
@@ -149,6 +167,8 @@ def black_scholes_delta_gamma_anti_control_pricer(option, spot, rate, vol, div, 
         spot_2 = spot
         convar_1 = 0.0
         convar_2 = 0.0
+        
+        z = np.random.normal(size=reps)
 
         for i in range(int(steps)):
             t = i * dt
@@ -156,7 +176,6 @@ def black_scholes_delta_gamma_anti_control_pricer(option, spot, rate, vol, div, 
             delta_2 = black_scholes_delta(spot_2, t, strike, expiry, vol, rate, div)
             gamma_1 = black_scholes_gamma(spot_1, t, strike, expiry, vol, rate, div)
             gamma_2 = black_scholes_gamma(spot_2, t, strike, expiry, vol, rate, div)
-            z = np.random.normal(size=reps)
             spot_tn_1 = spot_1 * np.exp(nudt + sigsdt * z[i])
             spot_tn_2 = spot_2 * np.exp(nudt + sigsdt * -z[i])
             convar_1 = convar_1 + delta_1 * (spot_tn_1 - spot_1 * erddt) + delta_2 * (spot_tn_2 - spot_2 * erddt)
