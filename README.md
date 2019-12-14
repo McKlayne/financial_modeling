@@ -1,1 +1,3 @@
-The purpose of this repository is to learn about computational finance.
+The purpose of this repository is to learn about computational finance. 
+
+This is a course on computational financial modeling using the Python programming language. Topics in computational finance as well as financial computing will be covered. Students will learn computational modeling with applications to option pricing and financial econometrics. Foundational concepts from computer science and software engineering will be introduced. Upon completion of the course students will have a new analytical framework for thinking about financial problem solving as well as a deep practical skill set in computational modeling.
